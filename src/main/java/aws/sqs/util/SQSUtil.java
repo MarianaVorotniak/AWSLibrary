@@ -20,14 +20,11 @@ public class SQSUtil {
 
     private static Logger LOGGER = LoggerFactory.getLogger(SQSUtil.class);
 
-    private static String sourceFolderName = System.getenv("SOURCE_FOLDER_NAME");
-    private static String destinationFolderName = System.getenv("DESTINATION_FOLDER_NAME");
-
-    public static String getDestinationKey(SQSEvent sqsEvent) throws AWSException {
+    public static String getDestinationKey(String destinationFolderName, SQSEvent sqsEvent) throws AWSException {
         return destinationFolderName + "/" + getFileName(sqsEvent);
     }
 
-    public static String getSourceKey(SQSEvent sqsEvent) throws AWSException {
+    public static String getSourceKey(String sourceFolderName, SQSEvent sqsEvent) throws AWSException {
         return sourceFolderName + "/" + getFileName(sqsEvent);
     }
 

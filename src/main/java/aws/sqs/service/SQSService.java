@@ -27,9 +27,9 @@ public class SQSService {
 
     private Logger LOGGER = LoggerFactory.getLogger(SQSService.class);
 
-    private String REGION = System.getenv("REGION");
+    private static String REGION = System.getenv("REGION");
 
-    private AmazonSQS sqs = initSQSClient(REGION);
+    private AmazonSQS sqs = initSQSClient();
 
     public void sendMessage(String sqs_url, String message) throws AWSException {
         if (message == null || message.isEmpty()) {
@@ -73,15 +73,21 @@ public class SQSService {
         }
     }
 
-    private AmazonSQS initSQSClient(String region) {
+    private AmazonSQS initSQSClient() {
         AmazonSQS client = null;
         try {
-            client = AmazonSQSClientBuilder.standard()
-                    .withRegion(region)
-                    .build();
+            client = AmazonSQSClientBuilder.standard().withRegion(REGION).build();
         }catch (Exception e) {
             LOGGER.error("Error while initializing SQSClient: " + e);
         }
         return client;
+    }
+
+    public static String getREGION() {
+        return REGION;
+    }
+
+    public static void setREGION(String REGION) {
+        SQSService.REGION = REGION;
     }
 }

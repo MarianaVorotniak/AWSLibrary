@@ -27,29 +27,28 @@ public class DynamoService {
 
     private Logger LOGGER = LoggerFactory.getLogger(DynamoService.class);
 
-    private static String tableName;
+    private static String TABLE_NAME;
+    private static String REGION = System.getenv("REGION");
 
-    private String REGION = System.getenv("REGION");
-
-    private DynamoDB dynamoDB = initDynamoDbClient(REGION);
-
-    public DynamoService(String tableName) {
-        this.tableName = tableName;
+    public DynamoService(String TABLE_NAME) {
+        DynamoService.TABLE_NAME = TABLE_NAME;
     }
+
+    private DynamoDB dynamoDB = initDynamoDbClient();
 
     public void createInvoiceItem(String fileName, String date, String status) throws AWSException {
         verifyDynamoDBDataNotNull(fileName, date, status);
 
         try {
-            dynamoDB.getTable(tableName)
+            dynamoDB.getTable(TABLE_NAME)
                     .putItem(new Item()
                             .withPrimaryKey("fileName", fileName, "date", date)
                             .withString("file_status", status));
             LOGGER.info("PutItem succeeded: fileName [{}], date [{}]", fileName, date);
         } catch (Exception e) {
-            LOGGER.error("Unable to add item: " + fileName + " " + date + " in " + tableName);
+            LOGGER.error("Unable to add item: " + fileName + " " + date + " in " + TABLE_NAME);
             LOGGER.error(e.getMessage());
-            throw new AWSException("Unable to add item: " + fileName + " " + date + " in " + tableName);
+            throw new AWSException("Unable to add item: " + fileName + " " + date + " in " + TABLE_NAME);
         }
     }
 
@@ -58,7 +57,7 @@ public class DynamoService {
 
         Table table;
         try {
-            table = dynamoDB.getTable(tableName);
+            table = dynamoDB.getTable(TABLE_NAME);
 
             LOGGER.debug("Attempting to read the item...");
             Item outcome = table.getItem(spec);
@@ -79,7 +78,7 @@ public class DynamoService {
         UpdateItemSpec updateItemSpec;
 
         try {
-            table = dynamoDB.getTable(tableName);
+            table = dynamoDB.getTable(TABLE_NAME);
 
             updateItemSpec = new UpdateItemSpec().withReturnValues(ReturnValue.ALL_NEW)
                     .withPrimaryKey("fileName", fileName, "date", date)
@@ -102,7 +101,7 @@ public class DynamoService {
         Table table;
 
         try {
-            table = dynamoDB.getTable(tableName);
+            table = dynamoDB.getTable(TABLE_NAME);
 
             DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
                     .withPrimaryKey(new PrimaryKey("fileName", fileName, "date", date));
@@ -118,10 +117,10 @@ public class DynamoService {
         }
     }
 
-    private DynamoDB initDynamoDbClient(String region) {
+    private DynamoDB initDynamoDbClient() {
         DynamoDB dynamoDB = null;
         try {
-            AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().withRegion(region).build();
+            AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().withRegion(REGION).build();
             dynamoDB = new DynamoDB(client);
         } catch (Exception e) {
             LOGGER.error("Error while initializing DynamoDBClient: " + e.getMessage());
@@ -130,17 +129,25 @@ public class DynamoService {
     }
 
     private void verifyDynamoDBDataNotNull(String fileName, String date, String status) throws AWSException {
-        if (fileName == null || tableName == null || date == null || status == null) {
-            LOGGER.error("Can't create DynamoDB record: table name[{}], file name[{}], date[{}], status[{}]", tableName, fileName, date, status);
-            throw new AWSException("Can't create DynamoDB record: table name[" + tableName + "], file name[" + fileName + "], date[" + date + "], status[" + status + "]");
+        if (fileName == null || TABLE_NAME == null || date == null || status == null) {
+            LOGGER.error("Can't create DynamoDB record: table name[{}], file name[{}], date[{}], status[{}]", TABLE_NAME, fileName, date, status);
+            throw new AWSException("Can't create DynamoDB record: table name[" + TABLE_NAME + "], file name[" + fileName + "], date[" + date + "], status[" + status + "]");
         }
     }
 
-    public String getTableName() {
-        return tableName;
+    public String getTABLE_NAME() {
+        return TABLE_NAME;
     }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
+    public void setTABLE_NAME(String TABLE_NAME) {
+        this.TABLE_NAME = TABLE_NAME;
+    }
+
+    public String getREGION() {
+        return REGION;
+    }
+
+    public void setREGION(String REGION) {
+        this.REGION = REGION;
     }
 }

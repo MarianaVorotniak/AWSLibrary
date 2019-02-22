@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 public class S3Service {
 
     private Logger LOGGER = LoggerFactory.getLogger(S3Service.class);
+    private static String REGION = System.getenv("REGION");
 
     private AmazonS3 s3Client = initS3Client();
 
@@ -46,7 +47,7 @@ public class S3Service {
     private AmazonS3 initS3Client() {
         AmazonS3 amazonS3 = null;
         try {
-            amazonS3 = AmazonS3ClientBuilder.defaultClient();
+            amazonS3 = AmazonS3ClientBuilder.standard().withRegion(REGION).build();;
         }catch (Exception e) {
             LOGGER.error("Error occurred while initializing S3 Client: " + e.getMessage());
         }
