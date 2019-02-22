@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  * <ol>
  *     <li>CREATE an item</li>
  *     <li>GET an item</li>
- *     <li>UPDATE the status {@link aws.dynamoDB.util.INVOICE_STATUS} of an item</li>
+ *     <li>UPDATE the status {@link aws.dynamoDB.util.InvoiceStatus} of an item</li>
  *     <li>DELETE an item</li>
  * </ol>
  */
@@ -27,58 +27,61 @@ public class DynamoService {
 
     private Logger LOGGER = LoggerFactory.getLogger(DynamoService.class);
 
-    private static String TABLE_NAME;
-    private static String REGION = System.getenv("REGION");
+    private String tableName;
+    private String region ;
+    private DynamoDB dynamoDB ;
 
-    public DynamoService(String TABLE_NAME) {
-        DynamoService.TABLE_NAME = TABLE_NAME;
+    public DynamoService(String region,String tableName) {
+       this.tableName = tableName;
+       this.region = region;
+
+        dynamoDB = initDynamoDbClient();
     }
 
-    private DynamoDB dynamoDB = initDynamoDbClient();
-
     public void createInvoiceItem(String fileName, String date, String status) throws AWSException {
-        verifyDynamoDBDataNotNull(fileName, date, status);
+        checkNotNull(fileName, date, status);
+
+        if (fileName == "nullPointer")
+            throw new NullPointerException("For test");
 
         try {
-            dynamoDB.getTable(TABLE_NAME)
+            dynamoDB.getTable(tableName)
                     .putItem(new Item()
                             .withPrimaryKey("fileName", fileName, "date", date)
                             .withString("file_status", status));
-            LOGGER.info("PutItem succeeded: fileName [{}], date [{}]", fileName, date);
+            LOGGER.info("DynamoDB {} item created: fileName - {}, date - {}", tableName, fileName, date);
         } catch (Exception e) {
-            LOGGER.error("Unable to add item: " + fileName + " " + date + " in " + TABLE_NAME);
-            LOGGER.error(e.getMessage());
-            throw new AWSException("Unable to add item: " + fileName + " " + date + " in " + TABLE_NAME);
+            LOGGER.error("Unable to add item {} - {} to DynamoDB table {}: {}", fileName, date, tableName, e.getMessage());
+            throw new AWSException("Unable to add item: " + fileName + " " + date + " in " + tableName);
         }
     }
 
-    public Item getItem(String fileName, String date) throws AWSException {
+    public Item getInvoiceItem(String fileName, String date) throws AWSException {
         GetItemSpec spec = new GetItemSpec().withPrimaryKey("fileName", fileName, "date", date);
 
         Table table;
         try {
-            table = dynamoDB.getTable(TABLE_NAME);
+            table = dynamoDB.getTable(tableName);
 
             LOGGER.debug("Attempting to read the item...");
             Item outcome = table.getItem(spec);
-            LOGGER.info("GetItem succeeded: " + outcome);
+            LOGGER.info("GetItem succeeded: {}", outcome);
             return outcome;
         }
         catch (Exception e) {
-            LOGGER.error("Unable to read item: " + fileName + " " + date);
-            LOGGER.error(e.getMessage());
+            LOGGER.error("Unable to read item: {} - {}: {}", fileName, date, e.getMessage());
             throw new AWSException("Unable to read item: " + fileName + " " + date);
         }
     }
 
-    public void updateItemStatus(String fileName, String date, String status) throws AWSException{
-       verifyDynamoDBDataNotNull(fileName, date, status);
+    public void updateInvoiceStatus(String fileName, String date, String status) throws AWSException{
+       checkNotNull(fileName, date, status);
 
         Table table;
         UpdateItemSpec updateItemSpec;
 
         try {
-            table = dynamoDB.getTable(TABLE_NAME);
+            table = dynamoDB.getTable(tableName);
 
             updateItemSpec = new UpdateItemSpec().withReturnValues(ReturnValue.ALL_NEW)
                     .withPrimaryKey("fileName", fileName, "date", date)
@@ -88,31 +91,29 @@ public class DynamoService {
 
             LOGGER.debug("Updating the item...");
             UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
-            LOGGER.info("UpdateItem succeeded:\n" + outcome.getItem().toJSONPretty());
+            LOGGER.info("Item [{} - {}] status in table \"{}\" updated: {} -> {}", fileName, date, tableName, "UPLOADED", status);
         }
         catch (Exception e) {
-            LOGGER.error("Unable to update item [{}]", fileName);
-            LOGGER.error(e.getMessage());
-            throw new AWSException("Unable to update item [" +  fileName + "] - " + e.getMessage());
+            LOGGER.error("Unable to update item [{} - {}]: ", fileName, date, e.getMessage());
+            throw new AWSException("Unable to update item " +  fileName + " - " + e.getMessage());
         }
     }
 
-    public void deleteItem(String fileName, String date) throws AWSException {
+    public void deleteInvoiceItem(String fileName, String date) throws AWSException {
         Table table;
 
         try {
-            table = dynamoDB.getTable(TABLE_NAME);
+            table = dynamoDB.getTable(tableName);
 
             DeleteItemSpec deleteItemSpec = new DeleteItemSpec()
                     .withPrimaryKey(new PrimaryKey("fileName", fileName, "date", date));
 
             LOGGER.debug("Deleting item...");
             table.deleteItem(deleteItemSpec);
-            LOGGER.info("DeleteItem succeeded");
+            LOGGER.info("Item {} - {} successfully deleted", fileName, date);
         }
         catch (Exception e) {
-            LOGGER.error("Unable to delete item: " + fileName + " " + date);
-            LOGGER.error(e.getMessage());
+            LOGGER.error("Unable to delete item {} - {}: {}", fileName, date, e.getMessage());
             throw new AWSException("Unable to delete item: " + fileName + " " + date);
         }
     }
@@ -120,34 +121,31 @@ public class DynamoService {
     private DynamoDB initDynamoDbClient() {
         DynamoDB dynamoDB = null;
         try {
-            AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().withRegion(REGION).build();
+            AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().withRegion(region).build();
             dynamoDB = new DynamoDB(client);
         } catch (Exception e) {
-            LOGGER.error("Error while initializing DynamoDBClient: " + e.getMessage());
+            LOGGER.error("Error while initializing DynamoDBClient: {}", e.getMessage());
         }
         return dynamoDB;
     }
 
-    private void verifyDynamoDBDataNotNull(String fileName, String date, String status) throws AWSException {
-        if (fileName == null || TABLE_NAME == null || date == null || status == null) {
-            LOGGER.error("Can't create DynamoDB record: table name[{}], file name[{}], date[{}], status[{}]", TABLE_NAME, fileName, date, status);
-            throw new AWSException("Can't create DynamoDB record: table name[" + TABLE_NAME + "], file name[" + fileName + "], date[" + date + "], status[" + status + "]");
+    private void checkNotNull(String fileName, String date, String status) throws AWSException {
+        if (fileName == null || tableName == null || date == null || status == null) {
+            LOGGER.error("Can't create DynamoDB record: table name-{}, file name-{}, date-{}, status-{}", tableName, fileName, date, status);
+            throw new AWSException("Can't create DynamoDB record: table name-" + tableName + ", file name-" + fileName + ", date-" + date + ", status-" + status);
         }
     }
 
-    public String getTABLE_NAME() {
-        return TABLE_NAME;
+    public String getTableName() {
+        return tableName;
     }
 
-    public void setTABLE_NAME(String TABLE_NAME) {
-        this.TABLE_NAME = TABLE_NAME;
+    public String getRegion() {
+        return region;
     }
 
-    public String getREGION() {
-        return REGION;
+    public void setRegion(String region) {
+        this.region = region;
     }
 
-    public void setREGION(String REGION) {
-        this.REGION = REGION;
-    }
 }

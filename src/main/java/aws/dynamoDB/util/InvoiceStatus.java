@@ -8,7 +8,7 @@ package aws.dynamoDB.util;
  * </ol>
  */
 
-public enum INVOICE_STATUS {
+public enum InvoiceStatus {
     COPIED,
     UPLOADED
 }

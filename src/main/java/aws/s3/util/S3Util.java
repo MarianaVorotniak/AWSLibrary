@@ -6,9 +6,13 @@ import exception.AWSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.net.URLDecoder;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This is a util class that works with S3 Bucket.
@@ -20,6 +24,8 @@ public class S3Util {
 
     private static Logger LOGGER = LoggerFactory.getLogger(S3Util.class);
 
+    private static Map<String, String> mapOfFilePaths = new HashMap<>();
+
     public static String getS3BucketName(S3Event s3Event) throws AWSException {
         S3EventNotification.S3EventNotificationRecord record = getS3Record(s3Event);
 
@@ -28,10 +34,10 @@ public class S3Util {
         String bkt;
         try {
             bkt = record.getS3().getBucket().getName();
-            LOGGER.info("Bucket name successfully received [{}]", bkt);
+            LOGGER.debug("Bucket name successfully received {}", bkt);
         }catch (Exception e) {
-            LOGGER.error("Error while getting S3 Bucket name: " + e);
-            throw new AWSException("Error while getting S3 Bucket name: " + e);
+            LOGGER.error("Error while getting S3 bucket name: {}", e.getMessage());
+            throw new AWSException("Error while getting S3 bucket name: " + e.getMessage());
         }
         return bkt;
     }
@@ -46,10 +52,10 @@ public class S3Util {
             key = record.getS3().getObject().getKey().replace('+', ' ');
             key = URLDecoder.decode(key, "UTF-8").split("/")[1];
         } catch (Exception e) {
-            LOGGER.error("Error while getting file name: " + e);
-            throw new AWSException("Error while getting file name: " + e);
+            LOGGER.error("Error while getting file name: {}", e.getMessage());
+            throw new AWSException("Error while getting file name: " + e.getMessage());
         }
-        LOGGER.info("File key successfully received [{}]", key);
+        LOGGER.debug("File key successfully received - {}", key);
         return key;
     }
 

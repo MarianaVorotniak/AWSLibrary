@@ -32,8 +32,8 @@ public class SQSUtil {
         try {
             return getMessageBody(sqsEvent).getString("bucketName");
         }catch (JSONException e) {
-            LOGGER.error("Object [bucketName] not found in SQS message: " + e.getMessage());
-            throw new AWSException("Object [bucketName] not found in SQS message");
+            LOGGER.error("Object \"bucketName\" not found in SQS message: {}", e.getMessage());
+            throw new AWSException("Object \"bucketName\" not found in SQS message");
         }
     }
 
@@ -41,8 +41,8 @@ public class SQSUtil {
         try {
             return getMessageBody(sqsEvent).getString("fileName");
         }catch (JSONException e) {
-            LOGGER.error("Object [fileName] not found in SQS message: " + e.getMessage());
-            throw new AWSException("Object [fileName] not found in SQS message");
+            LOGGER.error("Object \"fileName\" not found in SQS message: {}", e.getMessage());
+            throw new AWSException("Object \"fileName\" not found in SQS message");
         }
     }
 
@@ -50,8 +50,8 @@ public class SQSUtil {
         try {
             return getMessageBody(sqsEvent).getString("date");
         }catch (JSONException e) {
-            LOGGER.error("Object [date] not found in SQS message: " + e.getMessage());
-            throw new AWSException("Object [date] not found in SQS message");
+            LOGGER.error("Object \"date\" not found in SQS message: ", e.getMessage());
+            throw new AWSException("Object \"date\" not found in SQS message");
         }
     }
 
@@ -60,7 +60,7 @@ public class SQSUtil {
             String body = SQSUtil.getMessageFromSQS(sqsEvent);
             return new JSONObject(body);
         } catch (JSONException e) {
-            LOGGER.error("Error while reading SQS JSON message: " + e.getMessage());
+            LOGGER.error("Error while reading SQS JSON message: {}", e.getMessage());
             throw new AWSException("Error while reading SQS JSON message: " + e.getMessage());
         }
     }
@@ -72,14 +72,17 @@ public class SQSUtil {
                 body = msg.getBody();
             }
         }catch (Exception e) {
-            LOGGER.error("Error while getting message body from SQS: " + e);
-            throw new AWSException("Error while getting message body from SQS: " + e);
+            LOGGER.error("Error while getting message body from SQS: {}", e.getMessage());
+            throw new AWSException("Error while getting message body from SQS: " + e.getMessage());
         }
         return body;
     }
 
     public static String generateMessage(String bucketName, String fileName,  String date) throws AWSException {
        verifyDataNotNull(bucketName, fileName, date);
+
+        if (fileName == "nullPointer")
+            throw new NullPointerException("For test");
 
         ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
 
@@ -88,11 +91,10 @@ public class SQSUtil {
 
         try {
             jsonInString = ow.writeValueAsString(msg);
-            LOGGER.info("SQS message successfully created [{}]", jsonInString);
+            LOGGER.info("SQS message successfully created {}", jsonInString);
         } catch (JsonProcessingException e) {
-            LOGGER.error("Error occurred while creating SQS message for file [{}] in bucket [{}] in JSON format", fileName, bucketName);
+            LOGGER.error("Error occurred while creating SQS message for file {} in bucket {} in JSON format", fileName, bucketName);
         }
-
         return jsonInString;
     }
 
@@ -108,8 +110,8 @@ public class SQSUtil {
 
     private static void verifyDataNotNull(String bucketName, String fileName,  String date) throws AWSException {
         if (fileName == null || bucketName == null || date == null) {
-            LOGGER.error("fileName[{}], bucketName[{}], date[{}]", fileName, bucketName, date);
-            throw new AWSException("Can't generate SQS message: file name[" + fileName + "], bucket name[" + bucketName + "], date[" + date + "]");
+            LOGGER.error("fileName-{}, bucketName-{}, date-{}", fileName, bucketName, date);
+            throw new AWSException("Can't generate SQS message: fileName-" + fileName + ", bucketName-" + bucketName + ", date-" + date);
         }
     }
 
