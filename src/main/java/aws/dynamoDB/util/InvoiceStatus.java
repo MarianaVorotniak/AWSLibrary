@@ -10,5 +10,6 @@ package aws.dynamoDB.util;
 
 public enum InvoiceStatus {
     COPIED,
-    UPLOADED
+    UPLOADED,
+    MOVING
 }

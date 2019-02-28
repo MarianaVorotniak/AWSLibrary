@@ -10,6 +10,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
+
 /**
  * This is a util class that works with SQS.
  * It contains methods that get information about the uploaded file
@@ -78,15 +80,12 @@ public class SQSUtil {
         return body;
     }
 
-    public static String generateMessage(String bucketName, String fileName,  String date) throws AWSException {
-       verifyDataNotNull(bucketName, fileName, date);
-
-        if (fileName == "nullPointer")
-            throw new NullPointerException("For test");
+    public static String generateMessage(String bucketName, String fileName, String date, LocalDateTime time) throws AWSException {
+       checkNotNull(bucketName, fileName, date, time);
 
         ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
 
-        SQSMessage msg = createObject(bucketName, fileName, date);
+        SQSMessage msg = createObject(bucketName, fileName, date, time);
         String jsonInString = null;
 
         try {
@@ -98,20 +97,21 @@ public class SQSUtil {
         return jsonInString;
     }
 
-    private static SQSMessage createObject(String bucketName, String fileName, String date) {
+    private static SQSMessage createObject(String bucketName, String fileName, String date, LocalDateTime time) {
         SQSMessage sqsMessage = new SQSMessage();
 
         sqsMessage.setFileName(fileName);
         sqsMessage.setBucketName(bucketName);
         sqsMessage.setDate(date);
+        sqsMessage.setTime(time);
 
         return sqsMessage;
     }
 
-    private static void verifyDataNotNull(String bucketName, String fileName,  String date) throws AWSException {
-        if (fileName == null || bucketName == null || date == null) {
-            LOGGER.error("fileName-{}, bucketName-{}, date-{}", fileName, bucketName, date);
-            throw new AWSException("Can't generate SQS message: fileName-" + fileName + ", bucketName-" + bucketName + ", date-" + date);
+    private static void checkNotNull(String bucketName, String fileName,  String date, LocalDateTime time) throws AWSException {
+        if (fileName == null || bucketName == null || date == null || time == null) {
+            LOGGER.error("fileName-{}, bucketName-{}, date-{}, time-{}", fileName, bucketName, date, time);
+            throw new AWSException("Can't generate SQS message: fileName-" + fileName + ", bucketName-" + bucketName + ", date-" + date + ", time-" + time);
         }
     }
 

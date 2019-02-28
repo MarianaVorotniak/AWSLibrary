@@ -6,11 +6,7 @@ import exception.AWSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.net.URLDecoder;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +25,7 @@ public class S3Util {
     public static String getS3BucketName(S3Event s3Event) throws AWSException {
         S3EventNotification.S3EventNotificationRecord record = getS3Record(s3Event);
 
-        verifyS3EventNotificationRecordNotNull(record);
+        checkNotNull(record);
 
         String bkt;
         try {
@@ -43,17 +39,26 @@ public class S3Util {
     }
 
     public static String getFileName(S3Event s3Event) throws AWSException {
+        try {
+            return getFileKey(s3Event).split("/")[1];
+        }catch (Exception e) {
+            LOGGER.error("Error while getting file name: {}", e.getMessage());
+            throw new AWSException("Error while getting file name: " + e.getMessage());
+        }
+    }
+
+    public static String getFileKey(S3Event s3Event) throws AWSException {
         S3EventNotification.S3EventNotificationRecord record = getS3Record(s3Event);
 
-        verifyS3EventNotificationRecordNotNull(record);
+        checkNotNull(record);
 
         String key;
         try {
             key = record.getS3().getObject().getKey().replace('+', ' ');
-            key = URLDecoder.decode(key, "UTF-8").split("/")[1];
+            key = URLDecoder.decode(key, "UTF-8");
         } catch (Exception e) {
-            LOGGER.error("Error while getting file name: {}", e.getMessage());
-            throw new AWSException("Error while getting file name: " + e.getMessage());
+            LOGGER.error("Error while getting file key: {}", e.getMessage());
+            throw new AWSException("Error while getting file key: " + e.getMessage());
         }
         LOGGER.debug("File key successfully received - {}", key);
         return key;
@@ -77,13 +82,7 @@ public class S3Util {
         return record;
     }
 
-    public static String getDate() {
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-        LocalDateTime now = LocalDateTime.now();
-        return dtf.format(now);
-    }
-
-    private static void verifyS3EventNotificationRecordNotNull(S3EventNotification.S3EventNotificationRecord record) throws AWSException {
+    private static void checkNotNull(S3EventNotification.S3EventNotificationRecord record) throws AWSException {
         if (record == null) {
             LOGGER.error("Error while getting file name - S3EventNotificationRecord is null");
             throw new AWSException("Error while getting file name - S3EventNotificationRecord is null");

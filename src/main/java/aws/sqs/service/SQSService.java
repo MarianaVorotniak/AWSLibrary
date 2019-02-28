@@ -46,7 +46,6 @@ public class SQSService {
         }
 
         LOGGER.debug("Sending msg to SQS - {}", message);
-
         try {
             sqs.sendMessage(new SendMessageRequest()
                     .withMessageBody(message)
@@ -55,7 +54,6 @@ public class SQSService {
             LOGGER.error("Error while creating SQS message: ", e.getMessage());
             throw new AWSException("Error while creating SQS message: " + e.getMessage());
         }
-
         LOGGER.info("SQS message successfully sent");
     }
 
@@ -96,24 +94,23 @@ public class SQSService {
             LOGGER.error("Error occurred while setting deadLetterQueue. Caught an AmazonClientException, Error Message: " + ace.getMessage());
         } catch (AWSException e) {
             LOGGER.error("Error occurred while setting deadLetterQueue: {}", e.getMessage());
-            e.printStackTrace();
         }
     }
 
     private String getDeadLetterQueueArn(String deadLetterQueueName) throws AWSException {
         try {
-            String deadLetterQueueUrl = sqs.getQueueUrl(deadLetterQueueName)
-                    .getQueueUrl();
+            LOGGER.debug("Getting dead letter queue url...");
+            String deadLetterQueueUrl = sqs.getQueueUrl(deadLetterQueueName).getQueueUrl();
             GetQueueAttributesResult deadLetterQueueAttributes = sqs.getQueueAttributes(
                     new GetQueueAttributesRequest(deadLetterQueueUrl)
                             .withAttributeNames("QueueArn"));
             return deadLetterQueueAttributes.getAttributes().get("QueueArn");
         } catch (AmazonServiceException ase) {
-            LOGGER.error("Caught an AmazonServiceException, Error Message: {}", ase.getMessage());
-            throw new AWSException("Caught an AmazonServiceException, Error Message: " + ase.getMessage());
+            LOGGER.error("Caught an AmazonServiceException, Error occurred while getting DeadLetterQueueArn: {}", ase.getMessage());
+            throw new AWSException("Caught an AmazonServiceException, Error occurred while getting DeadLetterQueueArn: " + ase.getMessage());
         } catch (AmazonClientException ace) {
-            LOGGER.error("Caught an AmazonClientException, Error Message: {}", ace.getMessage());
-            throw new AWSException("Caught an AmazonClientException, Error Message: " + ace.getMessage());
+            LOGGER.error("Caught an AmazonClientException, Error occurred while getting DeadLetterQueueArn: {}", ace.getMessage());
+            throw new AWSException("Caught an AmazonClientException, Error occurred while getting DeadLetterQueueArn: " + ace.getMessage());
         }
     }
 
