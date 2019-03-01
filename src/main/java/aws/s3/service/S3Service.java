@@ -105,7 +105,7 @@ public class S3Service {
             objectContent = s3Client.getObject(request);
             stringContent = displayTextInputStream(objectContent.getObjectContent());
             LOGGER.debug("Content-Type: " + objectContent.getObjectMetadata().getContentType());
-            LOGGER.info("Content: {}", stringContent);
+            LOGGER.info("File content: {}", stringContent);
             return stringContent;
         }catch (Exception e) {
             LOGGER.error("Error occurred while reading {} content: {}", key, e.getMessage());

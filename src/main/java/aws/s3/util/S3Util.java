@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URLDecoder;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +41,9 @@ public class S3Util {
 
     public static String getFileName(S3Event s3Event) throws AWSException {
         try {
-            return getFileKey(s3Event).split("/")[1];
+            String fileName = getFileKey(s3Event).split("/")[1];
+            checkFileExtensionIsXml(fileName);
+            return fileName;
         }catch (Exception e) {
             LOGGER.error("Error while getting file name: {}", e.getMessage());
             throw new AWSException("Error while getting file name: " + e.getMessage());
@@ -80,6 +83,18 @@ public class S3Util {
             throw new AWSException("Error while getting S3 Event Notification record");
         }
         return record;
+    }
+
+    public static void checkFileExtensionIsXml(String fileName) throws AWSException {
+        String extension = "";
+        if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
+            extension = fileName.substring(fileName.lastIndexOf(".") + 1);
+        }
+        if (!extension.equals("xml")) {
+            LOGGER.error("Error: file extention is not xml - {}", extension);
+            throw new AWSException("Error: file extention is not xml - " + extension);
+        }
+
     }
 
     private static void checkNotNull(S3EventNotification.S3EventNotificationRecord record) throws AWSException {

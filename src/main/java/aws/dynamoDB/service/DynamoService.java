@@ -85,7 +85,7 @@ public class DynamoService {
             LOGGER.error("There is no such item {}-{} in table {}", fileName, date, tableName);
             throw new AWSException("There is no such item " + fileName + "-" + date + " in table " + tableName);
         }
-        LOGGER.info("GetItem from DynamoDB table succeeded: {}", outcome);
+        LOGGER.debug("GetItem from DynamoDB table succeeded: {}", outcome);
         return outcome;
     }
 
@@ -106,7 +106,7 @@ public class DynamoService {
 
             LOGGER.debug("Updating the item in DynamoDB table...");
             UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
-            LOGGER.info("Item [{} - {}] status in table \"{}\" updated: {} -> {}", fileName, date, tableName, "UPLOADED", status);
+            LOGGER.info("Item [{} - {}] status in table \"{}\" updated -> {}", fileName, date, tableName, status);
         }
         catch (Exception e) {
             LOGGER.error("Unable to update item [{} - {}]: ", fileName, date, e.getMessage());

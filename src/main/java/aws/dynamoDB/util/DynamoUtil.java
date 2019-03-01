@@ -6,6 +6,9 @@ import exception.AWSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static aws.dynamoDB.service.DynamoService.getInvoiceItem;
 
 public class DynamoUtil {
@@ -20,21 +23,23 @@ public class DynamoUtil {
         return isEventNameModify && isFileStatusMoving;
     }
 
-    public static String getInvoiceTableKey(DynamodbEvent dynamodbEvent, String keyName) throws AWSException {
+    public static List<String> getInvoiceTableKey(DynamodbEvent dynamodbEvent, String keyName) throws AWSException {
         LOGGER.debug("Getting value for key {}...", keyName);
-        String value = "";
+        List<String> values = new ArrayList<>();
         try {
             if (dynamodbEvent.getRecords().get(0).getEventName().equals("MODIFY")) {
                 for (DynamodbEvent.DynamodbStreamRecord record : dynamodbEvent.getRecords()) {
-                    value = record.getDynamodb().getKeys().get(keyName).getS();
+                    values.add(record.getDynamodb().getKeys().get(keyName).getS());
                 }
             }
         }catch (Exception e) {
             LOGGER.error("Error occurred while getting value for attribute {}: {}", keyName, e.getMessage());
             throw new AWSException("Error occurred while getting value for attribute " + keyName + ": " + e.getMessage());
         }
-        LOGGER.info("{} - {}", keyName, value);
-        return value;
+        for (String value : values) {
+            LOGGER.info("{} - {}", keyName, value);
+        }
+        return values;
     }
 
     public static String getBucketName(String fileName, String date) throws AWSException {
